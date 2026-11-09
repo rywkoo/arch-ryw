@@ -1,0 +1,186 @@
+@import "wal.css";
+
+/* Base styles */
+* {
+    border: none;
+    font-size: 12px;
+    font-family: "JetBrainsMono Nerd Font", "JetBrainsMono NF";
+    min-height: 25px;
+}
+
+/* Waybar window */
+window#waybar {
+  background: @transparents;
+  margin: 5px;
+  margin-top: 4px
+}
+
+#workspaces button {
+    color: @color6;
+    outline: none;
+    box-shadow: none;
+    border: none;
+    background: none;
+    padding-left: 0.5em;
+    padding-right: 0.5em;
+}
+
+#workspaces button.empty {
+    color: @foreground;
+    outline: none;
+    box-shadow: none;
+    border: none;
+    background: none;
+    padding-left: 0.5em;
+    padding-right: 0.5em;
+}
+
+/* Simple hover effect */
+#workspaces button:hover {
+  color: @color1;
+    outline: none;
+    box-shadow: none;
+    border: none;
+    background: none;
+    padding-left: 0.5em;
+    padding-right: 0.5em;
+}
+
+/* Remove focus outline */
+#workspaces button:focus {
+  color: @color6;
+    outline: none;
+    box-shadow: none;
+    border: none;
+    background: none;
+    padding-left: 0.5em;
+    padding-right: 0.5em;
+}
+
+#workspaces button:active {
+  color: @color6;
+    outline: none;
+    box-shadow: none;
+    border: none;
+    background: none;
+    padding-left: 0.5em;
+    padding-right: 0.5em;
+}
+
+/* Logo */
+#custom-logo {
+  padding: 0 10px;
+}
+
+/* Module containers */
+.modules-right,
+.modules-center,
+.modules-left {
+
+  background: @background; /* dark background */
+}
+
+/* Rounded corners for containers */
+.modules-right {
+    margin-top: 4px;
+  margin-right: 4px;
+  padding-left: 5px;
+  border-radius: 25px 25px 25px 25px;
+}
+
+.modules-center {
+  margin-top: 4px;
+  padding: 0 15px;
+  border-radius: 25px 25px 25px 25px;
+}
+
+.modules-left {
+    margin-top: 4px;
+  margin-left: 4px;
+  padding-right: 10px;
+  border-radius: 25px 25px 25px 25px;
+}
+
+/* Modules padding */
+#battery,
+#custom-clipboard,
+#custom-colorpicker,
+#custom-powerDraw,
+#bluetooth,
+#pulseaudio,
+#network,
+#disk,
+#memory,
+#backlight,
+#cpu,
+#temperature,
+#custom-weather,
+#idle_inhibitor,
+#jack,
+#tray,
+#window,
+#workspaces,
+#clock,
+#custom-swaync,
+#custom-logout {
+  padding: 0 5px;
+  color: @foreground; /* Use defined foreground for text */
+}
+
+#custom-logout {
+  padding-right: 20px;
+}
+
+#tray {
+  padding-right: 20px;
+  padding-left: 20px;
+}
+
+#network {
+  padding-left: 20px;
+}
+
+/* Specific module tweaks */
+#pulseaudio {
+
+}
+
+/* Critical and muted states */
+#temperature.critical,
+#pulseaudio.muted {
+  color: @color3; /* red-ish */
+  padding-top: 0;
+}
+
+/* Clock color */
+#clock {
+  color: @color6; /* orange-yellow */
+}
+
+/* Battery charging state */
+#battery.charging {
+    color: @color7; /* foreground */
+}
+
+/* Battery warning state */
+#battery.warning:not(.charging) {
+    color: @color0; /* dark background for contrast */
+}
+
+/* Battery critical state */
+#battery.critical:not(.charging) {
+    color: @color7; /* foreground */
+    animation-name: blink;
+    animation-duration: 0.5s;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+}
+
+/* Blink animation for critical battery */
+@keyframes blink {
+    to {
+        background-color: @color7; /* foreground */
+        color: @color0; /* background */
+    }
+}

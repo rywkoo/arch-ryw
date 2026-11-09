@@ -1,0 +1,5 @@
+Source repository: https://github.com/rywkoo/RyW-main
+Bundled local working snapshot: supplied in RyW-main(1).zip
+Additional shell configuration: supplied in zsh.zip
+
+The payload/ directory is the merged snapshot. Local files are used to overlay the repository clone at install time.

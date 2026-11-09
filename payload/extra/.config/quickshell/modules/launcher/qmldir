@@ -1,0 +1,5 @@
+module Kinatsu.Launcher
+Launcher 1.0 Launcher.qml
+Background 1.0 Background.qml
+MenuOption 1.0 MenuOption.qml
+P3Skew 1.0 P3Skew.qml

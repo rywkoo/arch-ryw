@@ -1,0 +1,46 @@
+# Remaining native packages installed after the first-run app wizard.
+# Core bootstrap dependencies are installed by the top-level install.sh.
+
+# Full desktop tools
+hyprlock
+rofi
+swaync
+cava
+awww
+hyprshot
+hypridle
+
+# Additional audio tools
+pipewire-alsa
+pipewire-jack
+gst-plugin-pipewire
+pamixer
+playerctl
+
+# Hardware integrations used by Quickshell and the dotfiles
+brightnessctl
+udiskie
+udisks2
+upower
+
+# Utilities used by the dotfiles
+fastfetch
+zsh
+starship
+eza
+duf
+fzf
+neovim
+unzip
+jq
+imagemagick
+ffmpeg
+python
+python-pywal
+qt6-multimedia
+qt6ct
+kvantum
+
+# Optional audio plug-ins already referenced by the supplied setup
+calf
+lsp-plugins-lv2

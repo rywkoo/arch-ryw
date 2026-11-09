@@ -1,0 +1,4 @@
+module Kinatsu.Bar
+Bar 1.0 Bar.qml
+Slab 1.0 Slab.qml
+P3Text 1.0 P3Text.qml

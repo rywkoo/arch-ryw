@@ -1,0 +1,5 @@
+# Zsh plugins to install automatically
+
+https://github.com/zsh-users/zsh-autosuggestions.git
+https://github.com/zsh-users/zsh-syntax-highlighting.git
+https://github.com/romkatv/powerlevel10k.git
