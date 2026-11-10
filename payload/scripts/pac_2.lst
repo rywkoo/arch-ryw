@@ -1,2 +1,4 @@
-# No extra AUR packages are required by this dotfile snapshot.
-# yay is still bootstrapped automatically for future AUR use.
+# AUR packages used by the supplied RyW configuration.
+# yay is installed before this manifest is processed.
+awww
+hyprshot

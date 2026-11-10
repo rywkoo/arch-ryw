@@ -1,45 +1,90 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
-EXTRA_DIR="$PROJECT_ROOT/extra"
-[[ -d "$EXTRA_DIR/.config" ]] || { echo "Missing dotfile payload: $EXTRA_DIR/.config" >&2; exit 1; }
+IFS=$'\n\t'
+
+PAYLOAD_DIR="${1:-$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)}"
+EXTRA_DIR="$PAYLOAD_DIR/extra"
+CONFIG_SOURCE="$EXTRA_DIR/.config"
 STATE="$HOME/.local/state/ryw-installer/backups"
 STAMP="$(date +%Y%m%d-%H%M%S)"
+CONFIG_BACKUP="$STATE/config-before-final-$STAMP"
+STAGING="$HOME/.config.ryw-staging-$STAMP"
+ROLLBACK_NEEDED=0
+
+[[ -d "$CONFIG_SOURCE/hypr" ]] || { echo "Missing complete configuration: $CONFIG_SOURCE/hypr" >&2; exit 1; }
+[[ -f "$CONFIG_SOURCE/hypr/hyprland.lua" ]] || { echo "Missing Hyprland Lua entry point." >&2; exit 1; }
+[[ -f "$CONFIG_SOURCE/hypr/keybinds.lua" ]] || { echo "Missing Hyprland keybindings." >&2; exit 1; }
+[[ -d "$CONFIG_SOURCE/waybar" ]] || { echo "Missing Waybar configuration." >&2; exit 1; }
+[[ -d "$CONFIG_SOURCE/quickshell" ]] || { echo "Missing Quickshell configuration." >&2; exit 1; }
+[[ -d "$CONFIG_SOURCE/rofi" ]] || { echo "Missing Rofi configuration." >&2; exit 1; }
+
 mkdir -p "$STATE" "$HOME/Pictures/wallpaper" "$HOME/Pictures/Screenshots"
-# Backup the entire existing config before replacing it, including files not in this bundle.
+rm -rf "$STAGING"
+mkdir -p "$STAGING"
+
+rollback() {
+    local status=$?
+    if ((ROLLBACK_NEEDED)); then
+        echo "Configuration copy failed. Restoring the previous ~/.config..." >&2
+        rm -rf "$HOME/.config"
+        if [[ -d "$CONFIG_BACKUP" ]]; then
+            mv "$CONFIG_BACKUP" "$HOME/.config"
+        fi
+    fi
+    rm -rf "$STAGING"
+    exit "$status"
+}
+trap rollback ERR
+
+echo "Staging the exact bundled ~/.config tree..."
+cp -a "$CONFIG_SOURCE/." "$STAGING/"
+[[ -f "$STAGING/hypr/keybinds.lua" ]]
+[[ -f "$STAGING/waybar/config.jsonc" ]]
+[[ -f "$STAGING/quickshell/shell.qml" ]]
+[[ -f "$STAGING/rofi/config.rasi" ]]
+
+# Materialize portable HOME placeholders without changing unrelated files.
+for config_file in "$STAGING/hypr/hyprlock.conf" "$STAGING/hypr/workflows/shaders.conf"; do
+    if [[ -f "$config_file" ]]; then
+        sed -i "s|\\\$HOME|$HOME|g" "$config_file"
+    fi
+done
+
+# Preserve the existing configuration as one complete, timestamped backup.
 if [[ -e "$HOME/.config" ]]; then
-  mv "$HOME/.config" "$STATE/config-before-final-$STAMP"
+    mv "$HOME/.config" "$CONFIG_BACKUP"
 fi
-mkdir -p "$HOME/.config"
-cp -a "$EXTRA_DIR/.config/." "$HOME/.config/"
-# Hyprlock/Hyprland config values are written with a portable $HOME token; materialize it here.
-for config_file in "$HOME/.config/hypr/hyprlock.conf" "$HOME/.config/hypr/workflows/shaders.conf"; do
-  if [[ -f "$config_file" ]]; then
-    sed -i "s|\\\$HOME|$HOME|g" "$config_file"
-  fi
+ROLLBACK_NEEDED=1
+mv "$STAGING" "$HOME/.config"
+ROLLBACK_NEEDED=0
+trap - ERR
+
+# Back up shell entry files individually before replacing them.
+for file in .zshenv .p10k.zsh; do
+    if [[ -f "$EXTRA_DIR/$file" ]]; then
+        if [[ -e "$HOME/$file" ]]; then
+            cp -a "$HOME/$file" "$STATE/$file-before-$STAMP"
+        fi
+        cp -a "$EXTRA_DIR/$file" "$HOME/$file"
+    fi
 done
-for f in .zshenv .p10k.zsh; do
-  if [[ -f "$EXTRA_DIR/$f" ]]; then
-    [[ ! -e "$HOME/$f" ]] || cp -a "$HOME/$f" "$STATE/$f-before-$STAMP"
-    cp -a "$EXTRA_DIR/$f" "$HOME/$f"
-  fi
-done
-# Set machine-dependent paths at install time.
+
+# Generate machine-specific GTK bookmarks and selected Waybar theme marker.
+mkdir -p "$HOME/.config/gtk-3.0" "$HOME/.config/waybar"
 printf 'file://%s/Downloads Downloads\nfile://%s/Pictures Pictures\n' "$HOME" "$HOME" > "$HOME/.config/gtk-3.0/bookmarks"
 printf '%s\n' "$HOME/.config/waybar/Theme/My Theme" > "$HOME/.config/waybar/.current-theme"
-# Keep wallpaper images already on the machine; only add files that are not there.
+
+# Add bundled wallpapers without overwriting files already on the machine.
 WALLPAPER_SOURCES=()
 [[ -d "$EXTRA_DIR/wallpaper" ]] && WALLPAPER_SOURCES+=("$EXTRA_DIR/wallpaper")
-[[ -d "$EXTRA_DIR/.config/hypr/wallpaper" ]] && WALLPAPER_SOURCES+=("$EXTRA_DIR/.config/hypr/wallpaper")
+[[ -d "$CONFIG_SOURCE/hypr/wallpaper" ]] && WALLPAPER_SOURCES+=("$CONFIG_SOURCE/hypr/wallpaper")
 if ((${#WALLPAPER_SOURCES[@]})); then
-  find "${WALLPAPER_SOURCES[@]}" -type f \
-    \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' -o -iname '*.gif' -o -iname '*.avif' \) -print0 |
     while IFS= read -r -d '' image; do
-      target="$HOME/Pictures/wallpaper/$(basename "$image")"
-      [[ -e "$target" ]] || cp -a "$image" "$target"
-    done
+        target="$HOME/Pictures/wallpaper/$(basename "$image")"
+        [[ -e "$target" ]] || cp -a "$image" "$target"
+    done < <(find "${WALLPAPER_SOURCES[@]}" -type f \
+        \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' -o -iname '*.gif' -o -iname '*.avif' \) -print0)
 fi
+
 find "$HOME/.config" -type f -name '*.sh' -exec chmod u+x {} +
-fc-cache -f >/dev/null
-printf 'Dotfiles and wallpapers restored. Previous .config is backed up under %s\n' "$STATE"
+printf 'Full RyW configuration installed. Previous configuration backup: %s\n' "$CONFIG_BACKUP"

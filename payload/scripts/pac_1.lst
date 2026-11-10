@@ -1,29 +1,27 @@
-# Remaining native packages installed after the first-run app wizard.
-# Core bootstrap dependencies are installed by the top-level install.sh.
+# Official Arch repository packages used by the supplied RyW configuration.
+# Keep one package per line. Comments and blank lines are ignored.
 
-# Full desktop tools
+# Hyprland desktop utilities
 hyprlock
 rofi
 swaync
 cava
-awww
-hyprshot
 hypridle
 
-# Additional audio tools
+# Audio and media controls
 pipewire-alsa
 pipewire-jack
 gst-plugin-pipewire
 pamixer
 playerctl
 
-# Hardware integrations used by Quickshell and the dotfiles
+# Hardware and device integration
 brightnessctl
 udiskie
 udisks2
 upower
 
-# Utilities used by the dotfiles
+# Terminal and command-line utilities
 fastfetch
 zsh
 starship
@@ -31,16 +29,20 @@ eza
 duf
 fzf
 neovim
-unzip
 jq
 imagemagick
 ffmpeg
 python
 python-pywal
+
+# Qt and desktop theming
 qt6-multimedia
 qt6ct
 kvantum
 
-# Optional audio plug-ins already referenced by the supplied setup
+# Audio plug-ins
 calf
 lsp-plugins-lv2
+
+# Required support utilities
+network-manager-applet

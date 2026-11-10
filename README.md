@@ -1,11 +1,11 @@
 # RyW Complete Installer
 
-A one-entry installer for the supplied RyW Arch Linux + Hyprland dotfiles.
+A single-entry Arch Linux installer for the complete RyW Hyprland configuration.
 
-## Install
+## Installation
 
-1. Extract this archive.
-2. Open a terminal in the extracted `RyW-Complete-Installer` folder.
+1. Extract the archive.
+2. Open a terminal in the `RyW-Complete-Installer` directory.
 3. Run:
 
    ```bash
@@ -13,36 +13,65 @@ A one-entry installer for the supplied RyW Arch Linux + Hyprland dotfiles.
    ./install.sh
    ```
 
-4. Confirm the installer. It installs the base Wayland/Hyprland stack, pulls `https://github.com/rywkoo/RyW-main`, and overlays the newer local dotfile snapshot included in this archive.
-5. If the installer was run from a TTY, start the temporary session with `start-hyprland`. The Quickshell first-run wizard opens automatically. If run inside an existing Wayland session, it opens there.
-6. Choose one browser, one file manager, and a Flatpak manager. The wizard opens Kitty to install those choices, install the remaining native dependencies/fonts/Zsh plugins, back up the temporary config, and apply the full RyW configuration.
+4. Read the preflight summary and confirm the installation.
+5. Allow the installer to complete. Do not close the terminal while it is running.
+6. When it finishes, reboot. The greetd/tuigreet login screen will appear automatically; sign in with your normal user account and Hyprland will start.
 
-## What it installs
+A reboot is recommended after installation, especially if NVIDIA driver or kernel packages were changed.
 
-- Hyprland, Quickshell, Waybar, Kitty, Hyprlock, Rofi, SwayNC, wallpaper and screenshot tooling.
-- Wayland portals, PipeWire, NetworkManager, Bluetooth, polkit, and session utilities.
-- Native developer/terminal utilities, Pywal, Qt6 multimedia support, UPower/udisks integration, and fonts.
-- `yay` is bootstrapped automatically for later AUR use; the supplied dotfile set does not require AUR packages.
-- Flatpak choices from the wizard: Firefox / Brave / Chromium; Dolphin; Bazaar. Bazaar is selected by default. Smile is installed because the existing Hyprland shortcut uses it.
+## Fixed application defaults
 
-## Important behavior
+There is no application picker or setup wizard.
 
-- SDDM is disabled and removed if installed. This bundle does not silently install or configure another display manager; start Hyprland from a TTY using `start-hyprland`.
-- The installer backs up your existing `~/.config`, `.zshenv`, `.zprofile`, `.zshrc`, and `.p10k.zsh` before creating the temporary config. The final dotfile restore also backs up the temporary config before replacing it.
-- The full final configuration is the `payload/extra/.config` snapshot supplied in the uploaded archive. That snapshot is intentionally overlaid on top of the current GitHub clone because it contains newer local Quickshell/Hyprland files than the public commit history.
-- GUI apps with Flatpak choices are not duplicated in the pacman/AUR package lists. Browser/file-manager commands use `xdg-open` so they follow the selected defaults.
-- Existing wallpaper files are not overwritten. Additional wallpapers are copied into `~/Pictures/wallpaper`.
-- NVIDIA driver installation is conservative: Turing-and-newer NVIDIA GPUs are matched to `nvidia-open` / `nvidia-open-lts` for the detected standard kernel. Older GPUs and non-standard kernels are not changed automatically.
+- Browser: Firefox (native Arch package)
+- File manager: Nemo (native Arch package)
+- Flatpak manager: Bazaar (Flathub system installation)
+- Emoji picker: Smile (Flathub system installation)
 
-## Recovery
+The installer configures Firefox and Nemo as the default handlers.
 
-Backups and logs are stored in:
+## Installation sequence
 
-- `~/.local/state/ryw-installer/backups/`
-- `~/.local/state/ryw-installer/logs/`
+The top-level `install.sh` runs the full setup in one ordered process:
 
-To restore the previous config, copy the desired backup's `.config` back to `~/.config`. The installer never deletes those backups.
+1. Preflight checks, logging, and a stable copy of the bundle
+2. System update and base Hyprland/Wayland packages
+3. GPU detection and supported graphics driver installation
+4. Flathub setup and fixed Flatpak applications
+5. Remaining official and AUR packages
+6. Fonts and font cache
+7. `yay` bootstrap
+8. Complete bundled `.config` deployment
+9. Oh My Zsh and configured plugins
+10. Default applications and user directories
+11. NetworkManager and Bluetooth services
+12. greetd/tuigreet login and automatic Hyprland session startup
+13. Final file/package verification
 
-## Testing note
+No temporary Hyprland configuration is installed. The wizard and all wizard startup logic have been removed. The installer does not launch Quickshell during installation.
 
-The archive's shell scripts are syntax-checked and the ZIP integrity is verified before release. A live Hyprland/Quickshell session cannot be launched in this build environment, so display hardware, Qt/QML runtime behavior, and post-login services must still be verified on the target Arch machine.
+## Configuration fidelity
+
+The installer copies the complete `payload/extra/.config` directory into `~/.config`. This includes the supplied Hyprland Lua configuration and keybindings, Waybar themes and scripts, Quickshell modules, Rofi configuration, Kitty settings, Zsh configuration, and other bundled application settings.
+
+The installer does not generate substitute keybindings or a simplified desktop configuration.
+
+## Backups and logs
+
+- Configuration backups: `~/.local/state/ryw-installer/backups/`
+- Installer logs: `~/.local/state/ryw-installer/logs/`
+- Stable installer payload: `~/.local/share/ryw-installer/bundle/`
+
+The existing `~/.config`, `.zshenv`, and `.p10k.zsh` are backed up before replacement. Existing wallpaper files are not overwritten.
+
+## Login and automatic session startup
+
+SDDM is disabled and removed if installed. The installer installs and configures greetd with tuigreet. After reboot, a terminal login screen appears automatically; authenticate with your normal user account and tuigreet starts `start-hyprland` for you. This is not passwordless autologin: your account remains protected by its normal password.
+
+## Important notes
+
+- Run as your regular user, not with `sudo`.
+- An internet connection is required for packages, Flathub, AUR, and Zsh plugins.
+- `awww` and `hyprshot` are installed from the AUR through `yay`.
+- NVIDIA driver installation is limited to detected Turing-or-newer GPUs using a standard Arch `linux` or `linux-lts` kernel. Custom kernels require their matching driver and headers.
+- Final checks verify required commands and configuration files. They cannot emulate a real graphical Hyprland/Quickshell session, so session-specific hardware behavior must be checked after login.
