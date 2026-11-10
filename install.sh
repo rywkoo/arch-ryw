@@ -44,6 +44,7 @@ command -v cp >/dev/null 2>&1 || die "The standard cp utility is required."
 [[ -f "$BUNDLE_DIR/payload/scripts/inst_apps.sh" ]] || die "Missing package installation script."
 [[ -f "$BUNDLE_DIR/payload/scripts/inst_font.sh" ]] || die "Missing font installation script."
 [[ -f "$BUNDLE_DIR/payload/scripts/inst_shl.sh" ]] || die "Missing Zsh installation script."
+[[ -f "$BUNDLE_DIR/payload/scripts/inst_pacman_config.sh" ]] || die "Missing pacman configuration script."
 [[ -f "$BUNDLE_DIR/payload/scripts/inst_wal.sh" ]] || die "Missing configuration installation script."
 
 mkdir -p "$LOG_DIR" "$STATE/backups"
@@ -93,6 +94,9 @@ fi
 SUDO_KEEPALIVE_PID=$!
 cleanup() { kill "$SUDO_KEEPALIVE_PID" 2>/dev/null || true; }
 trap cleanup EXIT
+
+run_stage "Enabling Pacman Color and ILoveCandy download progress" \
+    bash "$SCRIPTS/inst_pacman_config.sh" "$STAMP"
 
 run_stage "Updating the system and installing base desktop packages" \
     bash "$SCRIPTS/inst_base.sh"

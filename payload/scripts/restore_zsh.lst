@@ -1,5 +1,4 @@
-# Zsh plugins to install automatically
-
-https://github.com/zsh-users/zsh-autosuggestions.git
-https://github.com/zsh-users/zsh-syntax-highlighting.git
+# Additional Zsh plugins to install automatically.
+# zsh-syntax-highlighting, zsh-autosuggestions and zsh-256color
+# are installed explicitly by inst_shl.sh.
 https://github.com/romkatv/powerlevel10k.git

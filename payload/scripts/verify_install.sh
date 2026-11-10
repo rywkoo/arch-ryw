@@ -28,7 +28,7 @@ check_dir() {
 }
 
 echo "Checking required commands..."
-for command_name in hyprland qs waybar kitty rofi swaync firefox nemo zsh flatpak yay tuigreet; do
+for command_name in hyprland qs waybar kitty rofi swaync firefox nemo zsh flatpak yay tuigreet wal; do
     check_command "$command_name"
 done
 
@@ -45,6 +45,28 @@ check_file "$HOME/.config/zsh/.zshrc"
 check_file "$HOME/.zshenv"
 check_dir "$HOME/.config/quickshell/modules"
 check_dir "$HOME/.config/waybar/Theme"
+
+echo
+echo "Checking Pacman download progress configuration..."
+if grep -Eq '^[[:space:]]*Color([[:space:]]|$)' /etc/pacman.conf \
+    && grep -Eq '^[[:space:]]*ILoveCandy([[:space:]]|$)' /etc/pacman.conf; then
+    echo '[ OK ] Pacman Color and ILoveCandy enabled'
+else
+    echo '[FAIL] Pacman Color or ILoveCandy is not enabled'
+    failures=$((failures + 1))
+fi
+
+echo
+echo "Checking the current user's login shell..."
+target_user="$(id -un)"
+expected_zsh="$(command -v zsh || true)"
+actual_shell="$(getent passwd "$target_user" | awk -F: '{print $7}')"
+if [[ -n "$expected_zsh" && "$actual_shell" == "$expected_zsh" ]]; then
+    printf '[ OK ] %s uses Zsh (%s)\n' "$target_user" "$actual_shell"
+else
+    printf '[FAIL] %s login shell is %s; expected %s\n' "$target_user" "${actual_shell:-unknown}" "${expected_zsh:-zsh not installed}"
+    failures=$((failures + 1))
+fi
 
 echo
 echo "Checking login manager configuration..."

@@ -35,19 +35,20 @@ The installer configures Firefox and Nemo as the default handlers.
 The top-level `install.sh` runs the full setup in one ordered process:
 
 1. Preflight checks, logging, and a stable copy of the bundle
-2. Full system update and base Hyprland/Wayland packages
-3. GPU detection and supported graphics driver installation
-4. Flathub setup and Bazaar installation
-5. Smile installation
-6. `yay` bootstrap
-7. Remaining official and AUR packages
-8. Fonts and font cache
-9. Complete bundled `.config` deployment
-10. Oh My Zsh and configured plugins
-11. Default applications and user directories
-12. NetworkManager and Bluetooth services
-13. greetd/tuigreet login and automatic Hyprland session startup
-14. Final file/package verification
+2. Enable Pacman `Color` and `ILoveCandy` before the first package download
+3. Full system update and base Hyprland/Wayland packages
+4. GPU detection and supported graphics driver installation
+5. Flathub setup and Bazaar installation
+6. Smile installation
+7. `yay` bootstrap
+8. Remaining official and AUR packages
+9. Fonts and font cache
+10. Complete bundled `.config` deployment
+11. Validate Zsh files, set the user's login shell to Zsh, then install Oh My Zsh/plugins
+12. Default applications and user directories
+13. NetworkManager and Bluetooth services
+14. greetd/tuigreet login and automatic Hyprland session startup
+15. Final file/package and login-shell verification
 
 No temporary Hyprland configuration is installed. The wizard and all wizard startup logic have been removed. The installer does not launch Quickshell during installation.
 
@@ -60,6 +61,11 @@ Some errors are still fatal by design: running on a non-Arch system, running as 
 If any stage fails, the installer lists it at the end and returns a non-zero exit status to make the incomplete result visible. The full log is saved under `~/.local/state/ryw-installer/logs/`.
 
 `rsync` is no longer a prerequisite. The installer copies its payload with the standard `cp` utility. `rsync` remains in the optional base package list, but if that package cannot be installed it will be skipped without blocking the configuration copy.
+
+### Pywal and JACK compatibility
+
+- The installer first tries the official `python-pywal` package. If that fails, it tries `python-pywal16` from the AUR and checks that the `wal` command is available. The supplied Quickshell wallpaper workflow uses `wal`.
+- `pipewire-jack` is installed when no existing `jack2` or `jack2-dbus` package is detected. If JACK2 is already installed, the installer preserves that existing audio stack and intentionally skips `pipewire-jack` rather than removing JACK packages or breaking applications that depend on them. You can migrate the JACK implementation later after reviewing the packages that depend on JACK.
 
 ## Configuration fidelity
 
@@ -86,3 +92,14 @@ SDDM is disabled and removed if installed. The installer installs and configures
 - `awww` and `hyprshot` are installed from the AUR through `yay`.
 - NVIDIA driver installation is limited to detected Turing-or-newer GPUs using a standard Arch `linux` or `linux-lts` kernel. Custom kernels require their matching driver and headers.
 - Final checks verify required commands and configuration files. They cannot emulate a real graphical Hyprland/Quickshell session, so session-specific hardware behavior must be checked after login.
+
+
+## Pacman appearance
+
+Before the first package download, the installer backs up `/etc/pacman.conf`, enables `Color`, and adds `ILoveCandy`. This changes pacman's progress display from the default hash-style bar to the candy-style progress bar. The operation is idempotent and can safely be repeated.
+
+## Zsh login shell
+
+The installer validates the bundled Zsh startup files, registers the installed Zsh executable in `/etc/shells`, and uses `sudo chsh` (with a `usermod` fallback) to change the actual account shell. It verifies the account entry with `getent`. Oh My Zsh and plugin downloads happen after the account shell change, so network failures do not leave the account on Bash.
+
+The new shell applies to future login sessions. Log out completely and log back in (or reboot) before checking `$SHELL`; an already-open terminal keeps running its existing shell process.
