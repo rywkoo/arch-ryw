@@ -9,25 +9,36 @@ STATE="$HOME/.local/state/ryw-installer"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 LOG_DIR="$STATE/logs"
 LOG_FILE="$LOG_DIR/install-$STAMP.log"
-BACKUP_DIR="$STATE/backups/install-$STAMP"
+SCRIPTS="$BUNDLE_COPY/payload/scripts"
+FAILED_STAGES=()
 
 say() { printf '\n\033[1;36m[RYW]\033[0m %s\n' "$*"; }
 warn() { printf '\n\033[1;33m[WARNING]\033[0m %s\n' "$*" >&2; }
 die() { printf '\n\033[1;31m[ERROR]\033[0m %s\n' "$*" >&2; exit 1; }
 
-on_error() {
-    local status=$?
-    printf '\n[ERROR] Installation stopped at line %s (exit %s).\n' "${BASH_LINENO[0]:-unknown}" "$status" >&2
-    printf '[ERROR] Read the log: %s\n' "$LOG_FILE" >&2
-    exit "$status"
-}
-trap on_error ERR
+# A failed stage is recorded, but does not terminate the main installation.
+# Each stage is a separate process so its own `set -e` behavior remains reliable.
+run_stage() {
+    local description="$1"
+    shift
+    local status=0
 
-[[ -f /etc/arch-release ]] || die "This installer supports Arch Linux and Arch-based systems with pacman."
-[[ "$EUID" -ne 0 ]] || die "Run this installer as your regular user. Do not run it with sudo."
+    say "$description"
+    if "$@"; then
+        printf '\033[1;32m[ OK ]\033[0m %s\n' "$description"
+    else
+        status=$?
+        warn "Stage failed with exit code $status: $description"
+        warn "Skipping the remainder of this stage and continuing with the next stage."
+        FAILED_STAGES+=("$description (exit $status)")
+    fi
+}
+
+[[ -f /etc/arch-release ]] || die "This installer supports Arch Linux."
+[[ "$EUID" -ne 0 ]] || die "Run this installer as your regular user, not with sudo."
 command -v sudo >/dev/null 2>&1 || die "sudo is required."
 command -v pacman >/dev/null 2>&1 || die "pacman was not found."
-command -v rsync >/dev/null 2>&1 || die "rsync is required. Install it before continuing."
+command -v cp >/dev/null 2>&1 || die "The standard cp utility is required."
 [[ -d "$BUNDLE_DIR/payload/extra/.config/hypr" ]] || die "The archive is incomplete: the full Hyprland configuration is missing."
 [[ -d "$BUNDLE_DIR/payload/scripts" ]] || die "The archive is incomplete: payload/scripts is missing."
 [[ -f "$BUNDLE_DIR/payload/scripts/inst_apps.sh" ]] || die "Missing package installation script."
@@ -49,15 +60,16 @@ cat <<'EOF'
 
 RyW Arch Linux + Hyprland installation
 
-This installer uses your complete bundled configuration directly.
-There is no setup wizard, temporary desktop, or Quickshell runtime step.
+This installer installs your complete bundled configuration.
+There is no setup wizard, temporary desktop, or Quickshell runtime dependency.
 
 Fixed application defaults:
   Browser:       Firefox
   File manager:  Nemo
   Flatpak store: Bazaar
 
-Your existing configuration and shell files will be backed up before replacement.
+Recoverable errors are logged and skipped. Remaining installation stages continue.
+Your existing configuration and shell files are backed up before replacement.
 EOF
 
 printf '\nInstallation log: %s\n' "$LOG_FILE"
@@ -65,138 +77,75 @@ read -r -p "Continue with the RyW installation? [y/N] " answer
 [[ "$answer" =~ ^[Yy]$ ]] || { say "Cancelled. No installation changes were made."; exit 0; }
 
 say "Requesting administrator authentication..."
-sudo -v
+sudo -v || die "Administrator authentication failed. Cannot continue safely."
 
-# Keep a complete, stable copy of this bundle before running any child script.
-say "Preparing the installer payload..."
+# Keep a stable copy of the bundle without requiring rsync.
+# If launched from the stable bundle itself, do not try to copy a directory into itself.
 mkdir -p "$INSTALL_ROOT"
-mkdir -p "$BUNDLE_COPY"
-rsync -a --delete --exclude='.git' --exclude='*.zip' "$BUNDLE_DIR/" "$BUNDLE_COPY/"
-SCRIPTS="$BUNDLE_COPY/payload/scripts"
+if [[ "$BUNDLE_DIR" != "$BUNDLE_COPY" ]]; then
+    mkdir -p "$BUNDLE_COPY"
+    cp -a "$BUNDLE_DIR/." "$BUNDLE_COPY/"
+fi
+[[ -d "$SCRIPTS" ]] || die "The installer payload could not be staged: $SCRIPTS is missing."
 
-# Refresh sudo credentials while a long installation is running.
+# Refresh sudo credentials during long-running operations.
 ( while true; do sudo -n true 2>/dev/null || exit; sleep 50; done ) &
 SUDO_KEEPALIVE_PID=$!
-cleanup() {
-    kill "$SUDO_KEEPALIVE_PID" 2>/dev/null || true
-}
+cleanup() { kill "$SUDO_KEEPALIVE_PID" 2>/dev/null || true; }
 trap cleanup EXIT
 
-say "Updating package databases and installing the complete base desktop..."
-BASE_PACKAGES=(
-    base-devel git curl wget rsync unzip
-    greetd greetd-tuigreet
-    flatpak firefox nemo gvfs gvfs-mtp tumbler file-roller
-    hyprland quickshell waybar kitty
-    xdg-desktop-portal xdg-desktop-portal-hyprland xdg-desktop-portal-gtk
-    xdg-user-dirs xdg-utils wayland-protocols xorg-xwayland
-    grim slurp wl-clipboard
-    polkit-gnome libnotify
-    pipewire pipewire-audio pipewire-pulse wireplumber
-    networkmanager bluez bluez-utils
-    mesa
-)
-sudo pacman -Syu --needed --noconfirm "${BASE_PACKAGES[@]}"
+run_stage "Updating the system and installing base desktop packages" \
+    bash "$SCRIPTS/inst_base.sh"
 
-say "Detecting graphics hardware..."
-GPU_INFO="$(lspci -nn 2>/dev/null | grep -Ei 'VGA compatible controller|3D controller|Display controller' || true)"
-if grep -Eqi 'NVIDIA' <<<"$GPU_INFO"; then
-    if grep -Eqi 'RTX 20[0-9]{2}|RTX 30[0-9]{2}|RTX 40[0-9]{2}|RTX 50[0-9]{2}|GTX 16[0-9]{2}' <<<"$GPU_INFO"; then
-        if pacman -Q linux >/dev/null 2>&1; then
-            say "Installing NVIDIA open kernel modules for the standard linux kernel..."
-            sudo pacman -S --needed --noconfirm nvidia-open nvidia-utils nvidia-prime egl-wayland linux-headers
-        elif pacman -Q linux-lts >/dev/null 2>&1; then
-            say "Installing NVIDIA open kernel modules for the linux-lts kernel..."
-            sudo pacman -S --needed --noconfirm nvidia-open-lts nvidia-utils nvidia-prime egl-wayland linux-lts-headers
-        else
-            warn "NVIDIA hardware detected, but no standard linux/linux-lts kernel package was found. No mismatched driver will be installed."
-            warn "Install the driver package and headers matching your custom kernel before starting Hyprland."
-        fi
-    else
-        warn "NVIDIA hardware detected but the GPU generation was not positively matched to the open kernel module branch. Skipping automatic driver changes."
-    fi
+run_stage "Detecting and installing supported graphics drivers" \
+    bash "$SCRIPTS/inst_gpu.sh"
+
+run_stage "Configuring Flathub and installing Bazaar" \
+    bash "$SCRIPTS/inst_flatpak_bazaar.sh"
+
+run_stage "Installing Smile emoji picker" \
+    bash "$SCRIPTS/inst_flatpak_smile.sh"
+
+run_stage "Bootstrapping yay for AUR package support" \
+    bash "$SCRIPTS/inst_yay.sh" "$STATE"
+
+run_stage "Installing remaining official and AUR applications" \
+    bash "$SCRIPTS/inst_apps.sh"
+
+run_stage "Installing fonts and refreshing font cache" \
+    bash "$SCRIPTS/inst_font.sh"
+
+run_stage "Applying the complete bundled RyW configuration" \
+    bash "$SCRIPTS/inst_wal.sh" "$BUNDLE_COPY/payload"
+
+run_stage "Installing Oh My Zsh and configured Zsh plugins" \
+    bash "$SCRIPTS/inst_shl.sh" "$SCRIPTS"
+
+run_stage "Setting Firefox and Nemo as default applications" \
+    bash "$SCRIPTS/inst_defaults.sh"
+
+run_stage "Enabling NetworkManager and Bluetooth services" \
+    bash "$SCRIPTS/inst_services.sh"
+
+run_stage "Configuring greetd for automatic Hyprland startup" \
+    bash "$SCRIPTS/inst_greetd.sh" "$STAMP"
+
+run_stage "Checking installed packages and configuration files" \
+    bash "$SCRIPTS/verify_install.sh"
+
+printf '\n============================================================\n'
+if ((${#FAILED_STAGES[@]} == 0)); then
+    printf '\033[1;32mRyW installation completed. All stages reported success.\033[0m\n'
+else
+    printf '\033[1;33mRyW installation reached the end, but some stages were skipped.\033[0m\n'
+    printf '\nStages that reported errors:\n'
+    for failed in "${FAILED_STAGES[@]}"; do
+        printf '  - %s\n' "$failed"
+    done
+    printf '\nReview the log and retry or fix only the failed stages.\n'
 fi
-if grep -Eqi 'Intel' <<<"$GPU_INFO"; then
-    sudo pacman -S --needed --noconfirm vulkan-intel intel-media-driver
-fi
-if grep -Eqi 'AMD|Advanced Micro Devices' <<<"$GPU_INFO"; then
-    sudo pacman -S --needed --noconfirm vulkan-radeon
-fi
-
-say "Configuring Flathub and installing the fixed Flatpak applications..."
-sudo flatpak remote-add --system --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-sudo flatpak install --system --noninteractive --assumeyes flathub io.github.kolunmi.Bazaar
-sudo flatpak install --system --noninteractive --assumeyes flathub it.mijorus.smile
-
-say "Bootstrapping yay for AUR package support..."
-if ! command -v yay >/dev/null 2>&1; then
-    YAY_BUILD="$STATE/build/yay"
-    mkdir -p "$(dirname "$YAY_BUILD")"
-    rm -rf "$YAY_BUILD"
-    git clone --depth 1 https://aur.archlinux.org/yay.git "$YAY_BUILD"
-    (
-        cd "$YAY_BUILD"
-        makepkg -si --noconfirm
-    )
-fi
-command -v yay >/dev/null 2>&1 || die "yay bootstrap did not complete successfully."
-
-say "Installing the remaining native and AUR packages..."
-bash "$SCRIPTS/inst_apps.sh"
-
-say "Installing fonts used by the supplied themes and interface..."
-bash "$SCRIPTS/inst_font.sh"
-
-say "Applying the complete bundled RyW configuration..."
-bash "$SCRIPTS/inst_wal.sh" "$BUNDLE_COPY/payload"
-
-say "Installing Oh My Zsh and the configured Zsh plugins..."
-bash "$SCRIPTS/inst_shl.sh" "$SCRIPTS"
-
-say "Setting fixed application defaults..."
-xdg-mime default firefox.desktop x-scheme-handler/http
-xdg-mime default firefox.desktop x-scheme-handler/https
-xdg-mime default nemo.desktop inode/directory
-xdg-mime default nemo.desktop application/x-directory
-xdg-settings set default-web-browser firefox.desktop || warn "Could not set the default browser through xdg-settings; MIME defaults were still configured."
-xdg-user-dirs-update || true
-
-say "Enabling required system services..."
-sudo systemctl enable --now NetworkManager.service
-sudo systemctl enable --now bluetooth.service
-
-say "Configuring automatic Hyprland session startup through greetd..."
-# Keep a real login prompt: tuigreet authenticates the user before launching Hyprland.
-# This avoids insecure passwordless autologin while removing the manual start-hyprland step.
-sudo install -d -m 0755 /etc/greetd
-if [[ -f /etc/greetd/config.toml ]]; then
-    sudo cp -a /etc/greetd/config.toml "/etc/greetd/config.toml.ryw-backup-$STAMP"
-fi
-sudo tee /etc/greetd/config.toml >/dev/null <<'GREETD_CONFIG'
-[terminal]
-vt = 1
-
-[default_session]
-command = "tuigreet --time --cmd start-hyprland"
-user = "greeter"
-GREETD_CONFIG
-
-if pacman -Q sddm >/dev/null 2>&1; then
-    say "Disabling and removing SDDM to avoid competing display managers..."
-    sudo systemctl disable --now sddm.service 2>/dev/null || true
-    sudo pacman -Rns --noconfirm sddm
-fi
-
-sudo systemctl set-default graphical.target
-sudo systemctl enable greetd.service
-
-say "Running final installation checks..."
-bash "$SCRIPTS/verify_install.sh"
 
 cat <<EOF
-
-============================================================
-RyW installation completed.
 
 Installed defaults:
   Firefox
@@ -213,13 +162,16 @@ Backups:
 Installation log:
   $LOG_FILE
 
-The installer does not launch a temporary desktop or start Quickshell.
-The greetd login screen will appear automatically on the next boot.
-Sign in with your normal user account; tuigreet will launch Hyprland.
+The greetd login screen should appear after reboot.
+Sign in with your normal user account; tuigreet launches Hyprland.
 
-After the first login, check the session log if any component fails:
+After login, check this session log if a component fails:
   ~/.local/state/hypr/autostart.log
 
-A reboot is recommended if the NVIDIA driver or kernel packages were changed.
+A reboot is recommended after kernel or graphics driver changes.
 ============================================================
 EOF
+
+# Return a non-zero status when any stage failed so automation can detect
+# an incomplete install, while still leaving the detailed summary and log.
+((${#FAILED_STAGES[@]} == 0))
