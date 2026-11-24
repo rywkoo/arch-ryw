@@ -46,6 +46,10 @@ command -v cp >/dev/null 2>&1 || die "The standard cp utility is required."
 [[ -f "$BUNDLE_DIR/payload/scripts/inst_shl.sh" ]] || die "Missing Zsh installation script."
 [[ -f "$BUNDLE_DIR/payload/scripts/inst_pacman_config.sh" ]] || die "Missing pacman configuration script."
 [[ -f "$BUNDLE_DIR/payload/scripts/inst_wal.sh" ]] || die "Missing configuration installation script."
+<<<<<<< HEAD
+=======
+[[ -f "$BUNDLE_DIR/payload/scripts/finalize_install.sh" ]] || die "Missing final preparation script."
+>>>>>>> 594005b (Improve installer finalization and desktop initialization)
 
 mkdir -p "$LOG_DIR" "$STATE/backups"
 exec > >(tee -a "$LOG_FILE") 2>&1
@@ -134,6 +138,12 @@ run_stage "Enabling NetworkManager and Bluetooth services" \
 run_stage "Configuring greetd for automatic Hyprland startup" \
     bash "$SCRIPTS/inst_greetd.sh" "$STAMP"
 
+<<<<<<< HEAD
+=======
+run_stage "Preparing desktop services, Pywal, Awww and Hyprland tooling" \
+    bash "$SCRIPTS/finalize_install.sh"
+
+>>>>>>> 594005b (Improve installer finalization and desktop initialization)
 run_stage "Checking installed packages and configuration files" \
     bash "$SCRIPTS/verify_install.sh"
 
