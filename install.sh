@@ -46,10 +46,7 @@ command -v cp >/dev/null 2>&1 || die "The standard cp utility is required."
 [[ -f "$BUNDLE_DIR/payload/scripts/inst_shl.sh" ]] || die "Missing Zsh installation script."
 [[ -f "$BUNDLE_DIR/payload/scripts/inst_pacman_config.sh" ]] || die "Missing pacman configuration script."
 [[ -f "$BUNDLE_DIR/payload/scripts/inst_wal.sh" ]] || die "Missing configuration installation script."
-<<<<<<< HEAD
-=======
 [[ -f "$BUNDLE_DIR/payload/scripts/finalize_install.sh" ]] || die "Missing final preparation script."
->>>>>>> 594005b (Improve installer finalization and desktop initialization)
 
 mkdir -p "$LOG_DIR" "$STATE/backups"
 exec > >(tee -a "$LOG_FILE") 2>&1
