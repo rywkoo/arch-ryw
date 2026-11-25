@@ -49,6 +49,7 @@ The top-level `install.sh` runs the full setup in one ordered process:
 13. NetworkManager and Bluetooth services
 14. greetd/tuigreet login and automatic Hyprland session startup
 <<<<<<< HEAD
+<<<<<<< HEAD
 15. Final file/package and login-shell verification
 
 No temporary Hyprland configuration is installed. The wizard and all wizard startup logic have been removed. The installer does not launch Quickshell during installation.
@@ -58,6 +59,11 @@ No temporary Hyprland configuration is installed. The wizard and all wizard star
 
 No temporary Hyprland configuration is installed. The wizard and all wizard startup logic have been removed. The installer does not launch Quickshell during installation. Its final preparation stage generates Pywal colors from `~/Pictures/wallpaper/hutao.jpg`. If installation is run inside an active Wayland session, it also starts Awww and applies the image immediately. If no Wayland session is available, the wallpaper application is deferred to Hyprland autostart after the first login.
 >>>>>>> 594005b (Improve installer finalization and desktop initialization)
+=======
+15. Final file/package and login-shell verification
+
+No temporary Hyprland configuration is installed. The wizard and all wizard startup logic have been removed. The installer does not launch Quickshell during installation.
+>>>>>>> 8345f73 (Improve installer finalization and desktop initialization)
 
 ## Error handling and recovery
 
@@ -99,10 +105,14 @@ SDDM is disabled and removed if installed. The installer installs and configures
 - `awww` and `hyprshot` are installed from the AUR through `yay`.
 - NVIDIA driver installation is limited to detected Turing-or-newer GPUs using a standard Arch `linux` or `linux-lts` kernel. Custom kernels require their matching driver and headers.
 <<<<<<< HEAD
+<<<<<<< HEAD
 - Final checks verify required commands and configuration files. They cannot emulate a real graphical Hyprland/Quickshell session, so session-specific hardware behavior must be checked after login.
 =======
 - Final checks verify required commands (including `hyprpm`, `awww`, and `awww-daemon`), configuration files, the Pywal cache, and enabled system services. `hyprpm` is verified as an installed plugin manager; it is not a daemon and is not enabled as a service. The configuration currently contains no plugin repository declarations to install. The installer cannot emulate a real graphical Hyprland/Quickshell session, so session-specific hardware behavior must be checked after login. Hyprland autostart generates the Pywal palette first, starts Awww and applies `hutao.jpg`, then launches Quickshell, SwayNC, Waybar, and the Polkit authentication agent in that order.
 >>>>>>> 594005b (Improve installer finalization and desktop initialization)
+=======
+- Final checks verify required commands and configuration files. They cannot emulate a real graphical Hyprland/Quickshell session, so session-specific hardware behavior must be checked after login.
+>>>>>>> 8345f73 (Improve installer finalization and desktop initialization)
 
 
 ## Pacman appearance

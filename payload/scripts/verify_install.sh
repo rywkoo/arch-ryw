@@ -29,10 +29,14 @@ check_dir() {
 
 echo "Checking required commands..."
 <<<<<<< HEAD
+<<<<<<< HEAD
 for command_name in hyprland qs waybar kitty rofi swaync firefox nemo zsh flatpak yay tuigreet wal; do
 =======
 for command_name in lspci hyprland hyprctl hyprpm qs waybar kitty rofi swaync firefox nemo zsh flatpak yay tuigreet wal awww awww-daemon hyprlock hypridle hyprshot cava pamixer playerctl brightnessctl udiskie fastfetch starship eza duf fzf nvim jq convert ffmpeg; do
 >>>>>>> 594005b (Improve installer finalization and desktop initialization)
+=======
+for command_name in hyprland qs waybar kitty rofi swaync firefox nemo zsh flatpak yay tuigreet wal; do
+>>>>>>> 8345f73 (Improve installer finalization and desktop initialization)
     check_command "$command_name"
 done
 
@@ -42,9 +46,12 @@ check_file "$HOME/.config/hypr/hyprland.lua"
 check_file "$HOME/.config/hypr/keybinds.lua"
 check_file "$HOME/.config/hypr/autostart.lua"
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 check_file "$HOME/.config/hypr/wallpaper/hutao.jpg"
 >>>>>>> 594005b (Improve installer finalization and desktop initialization)
+=======
+>>>>>>> 8345f73 (Improve installer finalization and desktop initialization)
 check_file "$HOME/.config/waybar/config.jsonc"
 check_file "$HOME/.config/waybar/style.css"
 check_file "$HOME/.config/quickshell/shell.qml"
@@ -53,6 +60,7 @@ check_file "$HOME/.config/zsh/.zshrc"
 check_file "$HOME/.zshenv"
 check_dir "$HOME/.config/quickshell/modules"
 check_dir "$HOME/.config/waybar/Theme"
+<<<<<<< HEAD
 <<<<<<< HEAD
 =======
 check_file "$HOME/Pictures/wallpaper/hutao.jpg"
@@ -66,6 +74,8 @@ else
     failures=$((failures + 1))
 fi
 >>>>>>> 594005b (Improve installer finalization and desktop initialization)
+=======
+>>>>>>> 8345f73 (Improve installer finalization and desktop initialization)
 
 echo
 echo "Checking Pacman download progress configuration..."
@@ -78,6 +88,7 @@ else
 fi
 
 echo
+<<<<<<< HEAD
 <<<<<<< HEAD
 =======
 echo "Checking enabled system services..."
@@ -92,6 +103,8 @@ done
 
 echo
 >>>>>>> 594005b (Improve installer finalization and desktop initialization)
+=======
+>>>>>>> 8345f73 (Improve installer finalization and desktop initialization)
 echo "Checking the current user's login shell..."
 target_user="$(id -un)"
 expected_zsh="$(command -v zsh || true)"

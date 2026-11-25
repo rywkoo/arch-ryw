@@ -4,10 +4,14 @@ IFS=$'\n\t'
 
 BASE_PACKAGES=(
 <<<<<<< HEAD
+<<<<<<< HEAD
     base-devel git curl wget rsync unzip
 =======
     base-devel git curl wget rsync unzip pciutils
 >>>>>>> 594005b (Improve installer finalization and desktop initialization)
+=======
+    base-devel git curl wget rsync unzip
+>>>>>>> 8345f73 (Improve installer finalization and desktop initialization)
     greetd greetd-tuigreet
     flatpak firefox nemo gvfs gvfs-mtp tumbler file-roller
     hyprland quickshell waybar kitty

@@ -1,96 +1,100 @@
--- Kinatsu's Hyprland 0.57+ Lua autostart.
-<<<<<<< HEAD
--- Keep this limited to session services; user applications are launched on demand.
-=======
--- Initialize the wallpaper palette and Awww before launching color-dependent UI.
->>>>>>> 594005b (Improve installer finalization and desktop initialization)
+
+-- autostart.lua
+-- Hyprland 0.57+
 
 local function shell_quote(value)
     return "'" .. value:gsub("'", "'\\''") .. "'"
 end
 
+-- Execute commands asynchronously and record their output.
 local function run(label, command)
     local script = table.concat({
         'mkdir -p "$HOME/.local/state/hypr"',
-        'printf "[%s] START %s\\n" "$(date)" ' .. shell_quote(label)
+        'printf "[%s] START %s\\n" "$(date)" '
+            .. shell_quote(label)
             .. ' >> "$HOME/.local/state/hypr/autostart.log"',
-        "{ " .. command .. '; } >> "$HOME/.local/state/hypr/autostart.log" 2>&1',
+        "{ " .. command
+            .. '; } >> "$HOME/.local/state/hypr/autostart.log" 2>&1',
         "status=$?",
         'printf "[%s] EXIT %s status=%s\\n" "$(date)" '
-            .. shell_quote(label) .. ' "$status" >> "$HOME/.local/state/hypr/autostart.log"',
+            .. shell_quote(label)
+            .. ' "$status" >> "$HOME/.local/state/hypr/autostart.log"',
     }, "; ")
+
     hl.exec_cmd("sh -c " .. shell_quote(script))
 end
 
+-- Confirms that this module was loaded.
 run("autostart.lua loaded", "true")
 
+
+------------------------------------------------
+-- STARTUP: run once when Hyprland starts
+------------------------------------------------
+
 hl.on("hyprland.start", function()
-<<<<<<< HEAD
-    run("Quickshell", 'qs -p "$HOME/.config/quickshell/shell.qml"')
+
+    run("hyprland.start event", "true")
+
+    -- Quickshell
+    run("Quickshell",
+        'qs -p "$HOME/.config/quickshell/shell.qml"')
+
+    -- Notification daemon
     run("SwayNC", "swaync")
+
+    -- Waybar
     run("Waybar", "waybar")
+
+    -- Wallpaper daemon
     run("awww daemon", "awww-daemon")
+
+    -- Wait for awww, then apply wallpaper
     run("Set wallpaper", [[
         i=0
         until awww query >/dev/null 2>&1; do
             i=$((i + 1))
-            [ "$i" -lt 50 ] || { echo "awww daemon did not become ready" >&2; exit 1; }
+            if [ "$i" -ge 50 ]; then
+                echo "ERROR: awww daemon did not become ready" >&2
+                exit 1
+            fi
             sleep 0.1
         done
-        [ ! -f "$HOME/Pictures/wallpaper/hutao.jpg" ] || awww img "$HOME/Pictures/wallpaper/hutao.jpg"
+
+        awww img "$HOME/Pictures/wallpaper/hutao.jpg"
     ]])
-    run("Polkit agent", "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1")
-=======
-    -- Keep these operations in one shell so the order is deterministic.
-    run("Desktop startup", [[
-        wallpaper="$HOME/Pictures/wallpaper/hutao.jpg"
 
-        if [ -s "$wallpaper" ]; then
-            if command -v wal >/dev/null 2>&1; then
-                wal -i "$wallpaper" || echo "Pywal palette generation failed" >&2
-            else
-                echo "wal command is missing" >&2
-            fi
-        else
-            echo "Wallpaper is missing: $wallpaper" >&2
-        fi
+    -- Polkit authentication agent
+    run("Polkit",
+        "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1")
 
-        if command -v awww >/dev/null 2>&1 && command -v awww-daemon >/dev/null 2>&1; then
-            if ! awww query >/dev/null 2>&1; then
-                nohup awww-daemon >/dev/null 2>&1 </dev/null &
-            fi
+    -- Remove unwanted applets after startup
+    run("Remove applets",
+        "sleep 10; killall -q nm-applet; killall -q blueman-applet")
 
-            attempt=0
-            until awww query >/dev/null 2>&1; do
-                attempt=$((attempt + 1))
-                [ "$attempt" -lt 50 ] || { echo "Awww daemon did not become ready" >&2; break; }
-                sleep 0.1
-            done
+    -- Remove stale Rofi PID file
+    run("Remove stale Rofi PID",
+        "rm -f /run/user/1000/rofi.pid")
 
-            if awww query >/dev/null 2>&1 && [ -s "$wallpaper" ]; then
-                awww img "$wallpaper" || echo "Awww could not apply hutao.jpg" >&2
-            fi
-        else
-            echo "Awww or awww-daemon is missing" >&2
-        fi
+    -- Applications
+    run("Kitty", "kitty")
+    run("Telegram", "Telegram")
+    run("Discord", "discord")
+    run("Steam", "steam")
+    run("YouTube Music", "snap run youtube-music-desktop-app")
 
-        if command -v qs >/dev/null 2>&1; then
-            qs -p "$HOME/.config/quickshell/shell.qml" &
-        else
-            echo "Quickshell command is missing" >&2
-        fi
-
-        if command -v swaync >/dev/null 2>&1; then swaync & else echo "SwayNC command is missing" >&2; fi
-        if command -v waybar >/dev/null 2>&1; then waybar & else echo "Waybar command is missing" >&2; fi
-        if [ -x /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 ]; then
-            /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 &
-        else
-            echo "Polkit authentication agent is missing" >&2
-        fi
-    ]])
->>>>>>> 594005b (Improve installer finalization and desktop initialization)
+    -- Hyprland plugins
+    run("Hyprland plugin reload", "hyprpm reload")
 end)
 
+
+------------------------------------------------
+-- CONFIG RELOAD
+------------------------------------------------
+
 hl.on("config.reloaded", function()
-    hl.exec_cmd("sh -c 'pkill -x swaync 2>/dev/null; swaync'")
+    -- Restart SwayNC only if required
+    hl.exec_cmd(
+        "sh -c 'pkill -x swaync 2>/dev/null; swaync'"
+    )
 end)

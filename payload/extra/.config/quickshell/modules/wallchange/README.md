@@ -18,6 +18,7 @@ This follows the same named-config layout as your existing `qs -c bar` setup.
 - `awww`
 - `wal` / pywal
 - ImageMagick (`convert`)
+- `pkexec` and a working polkit authentication agent for the SDDM theme files
 - `notify-send`, `pkill`, `pgrep`, `setsid`, `sed`, `cat`, `find`
 
 ## Paths retained
@@ -29,7 +30,8 @@ This follows the same named-config layout as your existing `qs -c bar` setup.
 - `~/.config/hypr/hyprlock/image/image.jpg`
 - `~/.config/cava/config`
 - `~/.cache/wal/colors.json`
+- `/usr/share/sddm/themes/RyW/`
 
 ## Before relying on it
 
-Back up your existing Hyprland, Hyprlock, and Cava config files before testing. This module only updates files in your home directory; it does not change or require a display-manager theme.
+Back up your existing Hyprland, Hyprlock, Cava and SDDM config files before testing. The privileged SDDM steps are optional in this version: if polkit is unavailable or authorization is declined, the user session can still update its own wallpaper and configuration files. Review the terminal output on the first run and verify that all desired SDDM keys exist in your theme's `theme.conf`.

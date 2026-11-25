@@ -18,7 +18,7 @@ if [[ $- == *i* ]]; then
 
     fi
 fi
-[[ -r "$HOME/.cache/wal/sequences" ]] && (cat "$HOME/.cache/wal/sequences" &)
+(cat ~/.cache/wal/sequences &)
 #  Plugins 
 # manually add your oh-my-zsh plugins here
 plugins=(

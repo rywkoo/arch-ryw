@@ -22,17 +22,17 @@ xaxis = none
 show_idle_bar_heads = 1
 
 [color]
-background = "#010f2a"
-foreground = "#c4c4c5"
+background = "#040032"
+foreground = "#c3c3c8"
 gradient = 1
-gradient_color_1 = "#010f2a"
-gradient_color_2 = "#002ef5"
-gradient_color_3 = "#0def8d"
-gradient_color_4 = "#0ac6ff"
-gradient_color_5 = "#27dbff"
-gradient_color_6 = "#eb4d4d"
-gradient_color_7 = "#7cf7ed"
-gradient_color_8 = "#c4c4c5"
+gradient_color_1 = "#040032"
+gradient_color_2 = "#dd00ab"
+gradient_color_3 = "#5500c7"
+gradient_color_4 = "#6500e7"
+gradient_color_5 = "#cb07ff"
+gradient_color_6 = "#dc20ff"
+gradient_color_7 = "#f943fe"
+gradient_color_8 = "#c3c3c8"
 
 [smoothing]
 noise_reduction = 77

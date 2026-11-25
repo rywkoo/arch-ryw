@@ -4,7 +4,7 @@
 local mainMod = "SUPER"
 
 local terminal = "kitty"
-local fileManager = "xdg-open \"$HOME\""
+local fileManager = "nemo"
 local menu = "~/.config/rofi/launcher/launcher.sh"
 local power = "~/.config/rofi/power/powermenu.sh"
 
@@ -30,6 +30,12 @@ hl.bind(mainMod .. " + left", hl.dsp.focus({ direction = "left" }))
 hl.bind(mainMod .. " + right", hl.dsp.focus({ direction = "right" }))
 hl.bind(mainMod .. " + up", hl.dsp.focus({ direction = "up" }))
 hl.bind(mainMod .. " + down", hl.dsp.focus({ direction = "down" }))
+					
+------------------------------------------------
+-- WINDOW SWITCHING
+------------------------------------------------
+
+hl.bind("SUPER + TAB", hl.plugin.gloview.allworkspaces)
 
 ------------------------------------------------
 -- WORKSPACES
@@ -208,3 +214,15 @@ hl.bind(
     hl.dsp.exec_cmd("playerctl previous"),
     { locked = true }
 )
+
+------------------------------------------------
+-- KEYBOARD LAYOUT
+------------------------------------------------
+
+hl.config({
+    input = {
+        kb_layout = "us,kh",
+        kb_variant = "",
+        kb_options = "grp:win_space_toggle",
+    },
+})

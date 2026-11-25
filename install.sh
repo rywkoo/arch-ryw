@@ -17,14 +17,13 @@ warn() { printf '\n\033[1;33m[WARNING]\033[0m %s\n' "$*" >&2; }
 die() { printf '\n\033[1;31m[ERROR]\033[0m %s\n' "$*" >&2; exit 1; }
 
 # A failed stage is recorded, but does not terminate the main installation.
-# Each stage is a separate process so its own set -e behavior remains reliable.
+# Each stage is a separate process so its own `set -e` behavior remains reliable.
 run_stage() {
     local description="$1"
     shift
     local status=0
 
     say "$description"
-
     if "$@"; then
         printf '\033[1;32m[ OK ]\033[0m %s\n' "$description"
     else
@@ -35,29 +34,18 @@ run_stage() {
     fi
 }
 
-# ------------------------------------------------------------
-# PRE-INSTALLATION CHECKS
-# ------------------------------------------------------------
-
 [[ -f /etc/arch-release ]] || die "This installer supports Arch Linux."
 [[ "$EUID" -ne 0 ]] || die "Run this installer as your regular user, not with sudo."
 command -v sudo >/dev/null 2>&1 || die "sudo is required."
 command -v pacman >/dev/null 2>&1 || die "pacman was not found."
 command -v cp >/dev/null 2>&1 || die "The standard cp utility is required."
-
 [[ -d "$BUNDLE_DIR/payload/extra/.config/hypr" ]] || die "The archive is incomplete: the full Hyprland configuration is missing."
 [[ -d "$BUNDLE_DIR/payload/scripts" ]] || die "The archive is incomplete: payload/scripts is missing."
-
 [[ -f "$BUNDLE_DIR/payload/scripts/inst_apps.sh" ]] || die "Missing package installation script."
 [[ -f "$BUNDLE_DIR/payload/scripts/inst_font.sh" ]] || die "Missing font installation script."
 [[ -f "$BUNDLE_DIR/payload/scripts/inst_shl.sh" ]] || die "Missing Zsh installation script."
 [[ -f "$BUNDLE_DIR/payload/scripts/inst_pacman_config.sh" ]] || die "Missing pacman configuration script."
 [[ -f "$BUNDLE_DIR/payload/scripts/inst_wal.sh" ]] || die "Missing configuration installation script."
-[[ -f "$BUNDLE_DIR/payload/scripts/finalize_install.sh" ]] || die "Missing final preparation script."
-
-# ------------------------------------------------------------
-# LOGGING AND INSTALLATION INTRODUCTION
-# ------------------------------------------------------------
 
 mkdir -p "$LOG_DIR" "$STATE/backups"
 exec > >(tee -a "$LOG_FILE") 2>&1
@@ -86,60 +74,26 @@ Your existing configuration and shell files are backed up before replacement.
 EOF
 
 printf '\nInstallation log: %s\n' "$LOG_FILE"
-
 read -r -p "Continue with the RyW installation? [y/N] " answer
-[[ "$answer" =~ ^[Yy]$ ]] || {
-    say "Cancelled. No installation changes were made."
-    exit 0
-}
-
-# ------------------------------------------------------------
-# ADMINISTRATOR AUTHENTICATION
-# ------------------------------------------------------------
+[[ "$answer" =~ ^[Yy]$ ]] || { say "Cancelled. No installation changes were made."; exit 0; }
 
 say "Requesting administrator authentication..."
 sudo -v || die "Administrator authentication failed. Cannot continue safely."
 
-# ------------------------------------------------------------
-# STAGE THE INSTALLER BUNDLE
-# ------------------------------------------------------------
-
 # Keep a stable copy of the bundle without requiring rsync.
-# If launched from the stable bundle itself, do not copy a directory into itself.
-
+# If launched from the stable bundle itself, do not try to copy a directory into itself.
 mkdir -p "$INSTALL_ROOT"
-
 if [[ "$BUNDLE_DIR" != "$BUNDLE_COPY" ]]; then
     mkdir -p "$BUNDLE_COPY"
     cp -a "$BUNDLE_DIR/." "$BUNDLE_COPY/"
 fi
-
 [[ -d "$SCRIPTS" ]] || die "The installer payload could not be staged: $SCRIPTS is missing."
 
-# ------------------------------------------------------------
-# SUDO KEEPALIVE
-# ------------------------------------------------------------
-
 # Refresh sudo credentials during long-running operations.
-
-(
-    while true; do
-        sudo -n true 2>/dev/null || exit
-        sleep 50
-    done
-) &
-
+( while true; do sudo -n true 2>/dev/null || exit; sleep 50; done ) &
 SUDO_KEEPALIVE_PID=$!
-
-cleanup() {
-    kill "$SUDO_KEEPALIVE_PID" 2>/dev/null || true
-}
-
+cleanup() { kill "$SUDO_KEEPALIVE_PID" 2>/dev/null || true; }
 trap cleanup EXIT
-
-# ------------------------------------------------------------
-# INSTALLATION STAGES
-# ------------------------------------------------------------
 
 run_stage "Enabling Pacman Color and ILoveCandy download progress" \
     bash "$SCRIPTS/inst_pacman_config.sh" "$STAMP"
@@ -180,40 +134,21 @@ run_stage "Enabling NetworkManager and Bluetooth services" \
 run_stage "Configuring greetd for automatic Hyprland startup" \
     bash "$SCRIPTS/inst_greetd.sh" "$STAMP"
 
-# ------------------------------------------------------------
-# FINAL DESKTOP PREPARATION
-# ------------------------------------------------------------
-
-# Prepare desktop services, Hyprland tooling, Pywal and Awww.
-# This stage runs after configuration deployment and before verification.
-
-run_stage "Preparing desktop services, Pywal, Awww and Hyprland tooling" \
-    bash "$SCRIPTS/finalize_install.sh"
-
-# ------------------------------------------------------------
-# FINAL INSTALLATION VERIFICATION
-# ------------------------------------------------------------
+run_stage "Setting wallpaper with awww and generating Pywal colors" \
+    bash -c 'WALLPAPER="$HOME/Pictures/wallpaper/hutao.jpg"; awww img "$WALLPAPER" && wal -i "$WALLPAPER"'
 
 run_stage "Checking installed packages and configuration files" \
     bash "$SCRIPTS/verify_install.sh"
 
-# ------------------------------------------------------------
-# INSTALLATION SUMMARY
-# ------------------------------------------------------------
-
 printf '\n============================================================\n'
-
 if ((${#FAILED_STAGES[@]} == 0)); then
     printf '\033[1;32mRyW installation completed. All stages reported success.\033[0m\n'
 else
     printf '\033[1;33mRyW installation reached the end, but some stages were skipped.\033[0m\n'
-
     printf '\nStages that reported errors:\n'
-
     for failed in "${FAILED_STAGES[@]}"; do
         printf '  - %s\n' "$failed"
     done
-
     printf '\nReview the log and retry or fix only the failed stages.\n'
 fi
 
@@ -246,5 +181,4 @@ EOF
 
 # Return a non-zero status when any stage failed so automation can detect
 # an incomplete install, while still leaving the detailed summary and log.
-
 ((${#FAILED_STAGES[@]} == 0))

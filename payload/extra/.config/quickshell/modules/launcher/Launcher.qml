@@ -11,8 +11,9 @@ Item {
 
     // App commands are intentionally easy to customize here.
     // ── Edit these ──
-    readonly property var fileCmd:    ["sh", "-c", "xdg-open \"$HOME\""]
-    readonly property var browserCmd: ["xdg-open", "https://example.com"]
+    readonly property var fileCmd:    ["nemo"]
+    readonly property var browserCmd: ["firefox"]
+    readonly property var gameCmd:    ["steam"]
 
     function openLauncher() {
         if (win.visible && !scene.closing)
@@ -91,6 +92,7 @@ Item {
                 { name: "SEARCH",        desc: "Search for an application", run: () => scene.enterSearch("") },
                 { name: "FILE EXPLORER", desc: "Open the file explorer",    run: () => { Quickshell.execDetached(fileCmd);    scene.dismiss() } },
                 { name: "BROWSER",       desc: "Open the web browser",      run: () => { Quickshell.execDetached(browserCmd); scene.dismiss() } },
+                { name: "GAME",          desc: "Launch a game",             run: () => { Quickshell.execDetached(gameCmd);    scene.dismiss() } }
             ]
 
             readonly property var results: {

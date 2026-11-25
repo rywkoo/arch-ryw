@@ -178,7 +178,7 @@ fi
 export HISTFILE ZSH_AUTOSUGGEST_STRATEGY
 
 # HyDE Package Manager
-PM_COMMAND=(yay)
+PM_COMMAND=(hyde-shell pm)
 
 # Optionally load user configuration // useful for customizing the shell without modifying the main file
 if [[ -f $HOME/.hyde.zshrc ]]; then
@@ -209,12 +209,12 @@ fi
 
 
 alias c='clear' \
-    in='${PM_COMMAND[@]} -S' \
-    un='${PM_COMMAND[@]} -Rns' \
-    up='${PM_COMMAND[@]} -Syu' \
-    pl='${PM_COMMAND[@]} -Qs' \
-    pa='${PM_COMMAND[@]} -Ss' \
-    vc='nvim' \
+    in='${PM_COMMAND[@]} install' \
+    un='${PM_COMMAND[@]} remove' \
+    up='${PM_COMMAND[@]} upgrade' \
+    pl='${PM_COMMAND[@]} search installed' \
+    pa='${PM_COMMAND[@]} search all' \
+    vc='code' \
     fastfetch='fastfetch --logo-type kitty' \
     ..='cd ..' \
     ...='cd ../..' \

@@ -19,7 +19,6 @@ ShellRoot {
     readonly property bool enableNotifications: true
     readonly property bool enableAudioMixer: true
     readonly property bool enableWallchange: true
-    readonly property bool enableBluetooth: true
 
 //    Loader {
 //        active: root.enableBar

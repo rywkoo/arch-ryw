@@ -47,11 +47,11 @@ setopt SHARE_HISTORY            # Share history across multiple sessions
 #  This is your file 
 # Add your configurations here
 # export EDITOR=nvim
-export EDITOR="${EDITOR:-nvim}"
+export EDITOR=code
 
 # unset -f command_not_found_handler # Uncomment to prevent searching for commands not found in package manager
 
-export PATH="$PATH:$HOME/.spicetify"
+export PATH=$PATH:/home/ryuko/.spicetify
 
 ZSH_HIGHLIGHT_STYLES[command]='fg=green'
 ZSH_HIGHLIGHT_STYLES[unknown-token]='fg=red,underline'
